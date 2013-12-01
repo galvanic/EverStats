@@ -52,7 +52,7 @@ from code import interact
 
 
 def connect2Ev(check=False):
-    dev_token = "S=s4:U=a2310:E=14a00ca558f:C=142a9192994:P=1cd:A=en-devtoken:V=2:H=e95b413c4a9edd294396ba799b600082"
+    dev_token = open("token.txt").read()
     client = EvernoteClient(token=dev_token, sandbox=False)
     if check:
         userStore = client.get_user_store()
