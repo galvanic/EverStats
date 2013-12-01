@@ -21,6 +21,8 @@ Improvements
     - look at other libraries
 - compare two measures for the same day: amount of notes, and total content length of those notes put together
 - find a way to deal with outliers (both horizontal, in time, and vertical, spike of reading in a day)
+    - plot logarithmically ?
+    - plot by "feminist activity" (so a yes/no of whether there are fem posts that day) with varying colours for strength ?
 - include a wider range of notes (some feminist notes aren't tagged yet)
 
 
@@ -34,6 +36,8 @@ Bugs
 What else could I look at ? What can my Evernote usage tell me ?
 
 """
+
+import sys
 
 import evernote.edam.notestore.ttypes as NoteStoreTypes
 from evernote.api.client import EvernoteClient
@@ -93,66 +97,74 @@ def findNotes(noteStore, note_filter, verbose=False):
         )
     found_notes = noteStore.findNotesMetadata(note_filter, 0, 10000, resultSpec)
     if verbose:
-        print "Total amount of feminist tagged notes: %d" % found_notes.totalNotes
+        print "Total amount of notes tagged with '%s': %d" % (note_filter.words, found_notes.totalNotes)
     return found_notes
 
 
-def sortNotes(list_notes):
+def makeData(list_notes):
     """"""
+    notes = sorted(list_notes.notes, key=lambda n: n.created)
+
     dates = []
     content = []
-    for note in list_notes.notes:
+    # convert all epoch timestaps to just dates
+    for note in notes:
 
-        # data for the x axis: date note was created
         epoch_date_created = float(note.created)/1000.
         date_created = dt.datetime.fromtimestamp(epoch_date_created)
         date_created = date_created.date()
         dates.append(date_created)
 
-        # data for the y axis: total note content length for that day
         content.append(note.contentLength)
 
-    # zip it up
-    fem_notes = zip(dates, content)
-    # sort by date if it isn't already
-    fem_notes = sorted(fem_notes, key=lambda n: n[0])
-    # go through and add if same date (arg must be a more efficient way of doing this !) => maybe sort them beforehand ?
-    dates = [fem_notes[0][0]]
-    content = [fem_notes[0][1]]
+    notes = zip(dates, content)
+
+
+    dates = [notes[0][0]]
+    content = [notes[0][1]]
     num_notes = [1]
+
     i = 0
-    for femn in fem_notes:
-        if femn[0] == dates[i]:
-            content[i] += femn[1]
+
+    for note in notes:
+
+        if note[0] == dates[i]:
+            content[i] += note[1]
             num_notes[i] += 1
         else:
-            dates.append(femn[0])
-            content.append(femn[1])
+            dates.append(note[0])
+            content.append(note[1])
             num_notes.append(1)
             i += 1
+
     # arg that felt a bit finicky
+
     return (dates, num_notes, content)
 
 
 def makePlot(data):
     """"""
     x, y1, y2 = data
-    plt.subplot(2,1,1)
-    plt.bar(x, y1, align="center")
-    plt.subplot(2,1,2)
-    plt.bar(x, y2, align="center")
+    ax = plt.gca()
+    ax2 = ax.twinx()
+    ax.bar( x, y1, align="center", facecolor='#9999ff', lw=0)
+    ax2.bar(x, y2, align="center", facecolor='#ff9999', lw=0)
     plt.show()
 
 
-def main():
+def main(search_term, search_by="word"):
 
     noteStore = connect2Ev()
 
-    # nFilter = NoteStoreTypes.NoteFilter(tagGuids=findTagGuids("feminis"))
-    nFilter = NoteStoreTypes.NoteFilter(words="feminism")
-    notes = findNotes(noteStore, nFilter)
+    if search_by == "tag":
+        nFilter = NoteStoreTypes.NoteFilter(tagGuids=findTagGuids(search_term))
 
-    data = sortNotes(notes)
+    elif search_by == "word":
+        nFilter = NoteStoreTypes.NoteFilter(words=search_term)
+    
+    notes = findNotes(noteStore, nFilter, True)
+
+    data = makeData(notes)
     makePlot(data)
 
     return
@@ -160,13 +172,6 @@ def main():
 
 if __name__ == '__main__':
 
-    main()
-    # sys.exit(main(sys.argv[1]))
-
-
-
-
-
-
-
+    # main()
+    sys.exit(main(sys.argv[1]))
 
