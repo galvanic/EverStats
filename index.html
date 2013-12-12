@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html  lang="en">
+
+<head>
+
+<link href="pretty.css" rel="stylesheet">
+<script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+
+</head>
+
+
+<body>
+
+<header>
+	<h1>My Python Scripts</h1>
+	<ul>
+		<li><a href="#viz">Visualising my Evernote history</a></li><!-- Whoops repetition! -->
+	</ul>
+</header>
+
+<article>
+	<h2 id="viz">Visualising my Evernote history</h2> <!-- Meh, need better title -->
+	<p>
+		It's been a while since I've used Evernote. I got nostalgic, and wanted to see how I've used it over the past few months.
+		I'm particularly interested in seeing if there's some sort of pattern in the times I read certain tags, notably the feminist tag.
+		I assumed it would have been quite high last year, peaking during certain months and decreasing majorly since September this year.
+		Let's see if I'm right.
+	</p>
+	<p>
+		Looking at my history, it looks like I started working on this project again on the 29th of November. I'd had the idea earlier in the term,
+		and it had seemed complicated at the time (asking for a key<!-- link -->) what with video tutorials with titles like <a href="http://www.youtube.com/watch?v=yEn-G_jyM2A">"Python + Evernote - <strong>Advanced</strong> API Workshop"</a>
+	</p>
+	<pre><code class="prettyprint">
+def connect2Ev(check=False):
+    dev_token = open("token.txt").read()
+    client = EvernoteClient(token=dev_token, sandbox=False)
+    if check:
+        userStore = client.get_user_store()
+        user = userStore.getUser()
+        print "Connected to user account %s" % user.username
+    noteStore = client.get_note_store()
+    return noteStore
+</code></pre>
+
+</article>
+
+</body>
+</html>
