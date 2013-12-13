@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html  lang="en">
+<html  lang="en"><!-- I wonder if there's an official franglais language... -->
 
 <head>
 
 <link href="pretty.css" rel="stylesheet">
-<script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+<script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js?skin=sunburst"></script>
 
 </head>
 
@@ -30,7 +30,7 @@
 		Looking at my history, it looks like I started working on this project again on the 29th of November. I'd had the idea earlier in the term,
 		and it had seemed complicated at the time (asking for a key<!-- link -->) what with video tutorials with titles like <a href="http://www.youtube.com/watch?v=yEn-G_jyM2A">"Python + Evernote - <strong>Advanced</strong> API Workshop"</a>
 	</p>
-	<pre><code class="prettyprint">
+	<pre><code class="prettyprint linenums">
 def connect2Ev(check=False):
     dev_token = open("token.txt").read()
     client = EvernoteClient(token=dev_token, sandbox=False)
