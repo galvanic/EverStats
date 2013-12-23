@@ -7,8 +7,8 @@ For example:
 
 
 Input
-Nothing for the moment, but should be the dev_token
-Maybe the tag/word searched for ?
+Asks for a word or search phrase to filter notes with
+Should ask for the DEV_TOKEN, but only once at the beginning
 
 Output
 Plot of notes with that tag against time
@@ -24,6 +24,9 @@ Improvements
     - plot logarithmically ?
     - plot by "feminist activity" (so a yes/no of whether there are fem posts that day) with varying colours for strength ?
 - include a wider range of notes (some feminist notes aren't tagged yet)
+- Ferow says it would be more useful to look at weeks (but hard to do)
+    - I think months could already be interesting
+    - could be interesting to see if I read these articles at a particular day or time in the week or even day
 
 
 Bugs
@@ -47,13 +50,15 @@ import datetime as dt
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
+from itertools import chain
+
 from code import interact
 # interact(local=locals())
 
+DEV_TOKEN = open("token.txt").read()
 
 def connect2Ev(check=False):
-    dev_token = open("token.txt").read()
-    client = EvernoteClient(token=dev_token, sandbox=False)
+    client = EvernoteClient(token=DEV_TOKEN, sandbox=False)
     if check:
         userStore = client.get_user_store()
         user = userStore.getUser()
@@ -67,7 +72,7 @@ def findTagGuids(noteStore, tagname, verbose=False):
     Returns a list of tag GUIDS corresponding to tag names inputed (string).
     Only returns one tag for the moment, might make it do more later.
     """
-    list_tags = noteStore.listTags(dev_token)
+    list_tags = noteStore.listTags(DEV_TOKEN)
 
     for t in list_tags:
         if tagname in t.name.lower():
@@ -96,24 +101,34 @@ def findNotes(noteStore, note_filter, verbose=False):
         includeLargestResourceSize = False,
         )
     found_notes = noteStore.findNotesMetadata(note_filter, 0, 10000, resultSpec)
+    total_num_notes = found_notes.totalNotes
+    found_notes = found_notes.notes
+
+    while len(found_notes) < total_num_notes:
+        new_found_notes = noteStore.findNotesMetadata(note_filter, len(found_notes), 10000, resultSpec).notes
+        found_notes = list(chain.from_iterable([new_found_notes, found_notes]))
+        
     if verbose:
-        print "Total amount of notes tagged with '%s': %d" % (note_filter.words, found_notes.totalNotes)
+        print "Total amount of notes tagged with '%s': %d %d" % (note_filter.words, len(found_notes), total_num_notes) # hum, this doesn't work
     return found_notes
 
 
 def makeData(list_notes):
-    """"""
-    notes = sorted(list_notes.notes, key=lambda n: n.created)
+    """
+    Ugh I'm missing data. Amount passed to this function doesn't match up.
+    """
+    notes = sorted(list_notes, key=lambda n: n.created)
 
     dates = []
     content = []
     # convert all epoch timestaps to just dates
-    for note in notes:
+    for i, note in enumerate(notes):
 
         epoch_date_created = float(note.created)/1000.
         date_created = dt.datetime.fromtimestamp(epoch_date_created)
         date_created = date_created.date()
         dates.append(date_created)
+        print i, date_created, note.title[:40]
 
         content.append(note.contentLength)
 
@@ -142,14 +157,22 @@ def makeData(list_notes):
     return (dates, num_notes, content)
 
 
-def makePlot(data):
-    """"""
+def makePlot(data, show=False):
+    """
+    x:  date info
+    y1: number of notes with the search_term
+    y2: total content of the notes with the search_term
+
+    """
     x, y1, y2 = data
     ax = plt.gca()
     ax2 = ax.twinx()
-    ax.bar( x, y1, align="center", facecolor='#9999ff', lw=0)
-    ax2.bar(x, y2, align="center", facecolor='#ff9999', lw=0)
-    plt.show()
+    ax.bar( x, y1, align="center", facecolor='#9999ff', lw=0)   # number notes in blue
+    ax2.bar(x, y2, align="center", facecolor='#ff9999', lw=0)   # content in red (check this :p)
+    if show:
+        plt.show()
+    # save plot
+    return
 
 
 def main(search_term, search_by="word"):
@@ -157,7 +180,7 @@ def main(search_term, search_by="word"):
     noteStore = connect2Ev()
 
     if search_by == "tag":
-        nFilter = NoteStoreTypes.NoteFilter(tagGuids=findTagGuids(search_term))
+        nFilter = NoteStoreTypes.NoteFilter(tagGuids=findTagGuids(noteStore, search_term))
 
     elif search_by == "word":
         nFilter = NoteStoreTypes.NoteFilter(words=search_term)
@@ -165,13 +188,12 @@ def main(search_term, search_by="word"):
     notes = findNotes(noteStore, nFilter, True)
 
     data = makeData(notes)
-    makePlot(data)
+    makePlot(data, True)
 
     return
 
 
 if __name__ == '__main__':
 
-    # main()
-    sys.exit(main(sys.argv[1]))
+    sys.exit(main(sys.argv[1], "word"))
 
