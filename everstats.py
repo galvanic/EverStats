@@ -24,7 +24,7 @@ Improvements
     - plot logarithmically ?
     - plot by "feminist activity" (so a yes/no of whether there are fem posts that day) with varying colours for strength ?
 - include a wider range of notes (some feminist notes aren't tagged yet)
-- Ferow says it would be more useful to look at weeks (but hard to do)
+- Feroz says it would be more useful to look at weeks (but hard to do > could do it with the .weekday method) 
     - I think months could already be interesting
     - could be interesting to see if I read these articles at a particular day or time in the week or even day
 
@@ -109,13 +109,13 @@ def findNotes(noteStore, note_filter, verbose=False):
         found_notes = list(chain.from_iterable([new_found_notes, found_notes]))
         
     if verbose:
-        print "Total amount of notes tagged with '%s': %d %d" % (note_filter.words, len(found_notes), total_num_notes) # hum, this doesn't work
+        print "Total amount of notes tagged with '%s': %d" % (note_filter.words, len(found_notes))
     return found_notes
 
 
-def makeData(list_notes):
+def makeData(list_notes, by_month):
     """
-    Ugh I'm missing data. Amount passed to this function doesn't match up.
+    
     """
     notes = sorted(list_notes, key=lambda n: n.created)
 
@@ -127,8 +127,9 @@ def makeData(list_notes):
         epoch_date_created = float(note.created)/1000.
         date_created = dt.datetime.fromtimestamp(epoch_date_created)
         date_created = date_created.date()
+        if by_month:
+            date_created = date_created.replace(day=1)
         dates.append(date_created)
-        print i, date_created, note.title[:40]
 
         content.append(note.contentLength)
 
@@ -143,39 +144,45 @@ def makeData(list_notes):
 
     for note in notes:
 
-        if note[0] == dates[i]:
+        note_date = note[0]
+
+        if note_date == dates[i]:
             content[i] += note[1]
             num_notes[i] += 1
         else:
-            dates.append(note[0])
+            dates.append(note_date)
             content.append(note[1])
             num_notes.append(1)
             i += 1
 
-    # arg that felt a bit finicky
-
     return (dates, num_notes, content)
 
 
-def makePlot(data, show=False):
+def makePlot(data, by_month, show=True):
     """
     x:  date info
     y1: number of notes with the search_term
     y2: total content of the notes with the search_term
 
     """
+    if by_month:
+        width = 31
+    else:
+        width = 1
+
     x, y1, y2 = data
+
     ax = plt.gca()
     ax2 = ax.twinx()
-    ax.bar( x, y1, align="center", facecolor='#9999ff', lw=0)   # number notes in blue
-    ax2.bar(x, y2, align="center", facecolor='#ff9999', lw=0)   # content in red (check this :p)
+    ax.bar( x, y1, align="center", facecolor='#9999ff', lw=0, width=width)   # number notes in blue
+    ax2.bar(x, y2, align="center", facecolor='#ff9999', lw=0, width=width)   # content in red
     if show:
         plt.show()
     # save plot
     return
 
 
-def main(search_term, search_by="word"):
+def main(search_term, search_by, by_month=True):
 
     noteStore = connect2Ev()
 
@@ -187,13 +194,13 @@ def main(search_term, search_by="word"):
     
     notes = findNotes(noteStore, nFilter, True)
 
-    data = makeData(notes)
-    makePlot(data, True)
+    data = makeData(notes, by_month=by_month)
+    makePlot(data, by_month=by_month, show=True)
 
     return
 
 
 if __name__ == '__main__':
 
-    sys.exit(main(sys.argv[1], "word"))
+    sys.exit(main(sys.argv[2], sys.argv[1], False))
 
